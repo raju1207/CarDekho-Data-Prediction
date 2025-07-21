@@ -186,7 +186,7 @@ with tab3:
 
     # Dropdown to select city
     city_list = ["All"] + sorted(ml_df["city"].unique().tolist())
-    selected_city = st.selectbox("Select City to View Data", city_list)
+    selected_city = st.selectbox("**Select City to View Data**", city_list)
 
     # Filter dataframe based on selection
     if selected_city == "All":
@@ -199,9 +199,9 @@ with tab3:
 
     st.write(f"**Showing** {filtered_df.shape[0]} **rows for city**: **{selected_city}**")
 
-    # # Missing values
-    # st.subheader("**Missing Values**")
-    # st.write(ml_df.isnull().sum())
+    # Missing values
+    st.subheader("**Missing Values**")
+    st.write(ml_df.isnull().sum())
 
     # Column selection
     column = st.selectbox("**Choose a numeric column for histogram**", ml_df.select_dtypes(include='number').columns)
