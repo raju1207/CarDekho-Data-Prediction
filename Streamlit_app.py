@@ -3,7 +3,10 @@ import pickle
 import numpy as np
 import pandas as pd
 import base64
+import seaborn as sns
+import matplotlib.pyplot as plt
 from sklearn.preprocessing import OrdinalEncoder
+from datetime import datetime
 
 
 @st.cache_resource
@@ -53,19 +56,30 @@ categorical_features = ["city", "ft", "bt", "transmission", "oem", "model", "var
 dropdown_options = {feature: ml_df[feature].unique().tolist() for feature in categorical_features}
 
 # Inject custom CSS to style the tabs
-tab1, tab2 = st.tabs(["Home", "Price Values"])
+
+st.markdown("""
+    <style>
+    /* Make all tab labels bold */
+    div[data-testid="stTabs"] button {
+        font-weight: bold !important;
+        color: black;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+tab1, tab2, tab3 = st.tabs(["Home", "Price Values", "Car Resale Price EDA"])
 
 with tab1:
-    st.write("<h4 style = 'color: black;'>Welcome to the Home tab!</h4>", unsafe_allow_html=True)
+    st.write("<h4 style = 'color: black;'><strong>Welcome to the Home tab!</strong></h4>", unsafe_allow_html=True)
     st.markdown("""
     <div style='color: black; font-size: 20px;'>
-        <strong><h4 style= 'color: white;'>Introduction</h4></strong>
+        <strong><h4 style= 'color: white; font-size: 22px'><strong>Introduction</strong></h4></strong>
         In the rapidly evolving automotive market, determining the right price for a vehicle is crucial 
         for both buyers and sellers. The Car Price Prediction App provides an intelligent solution to 
         estimate car prices based on key parameters using machine learning models. This tool helps users 
-        make data-driven decisions by leveraging historical data and predictive analytics.<br><br>
+        make data-driven decisions by leveraging historical data and predictive analytics.<br>
         
-    <strong><h4 style= 'color: white;'>Key Features</h4></strong>
+    <strong><h4 style= 'color: white; font-size: 20px'><strong>Key Features</strong></h4></strong>
         <ul>
             <li>User-Friendly Interface: Simple and interactive Streamlit-based UI.</li>
             <li>Machine Learning Model: Utilizes an advanced regression model (XGBRegressor) trained 
@@ -76,69 +90,141 @@ with tab1:
             <li>Comparison Tool: Allows users to compare multiple cars for better decision-making.</li>
         </ul>
         
-    <strong><h4 style= 'color: white;'>Conclusion</h4></strong>
+    <strong><h4 style= 'color: white; font-size: 20px'><strong>Conclusion</strong></h4></strong>
         The Car Price Prediction App is a powerful tool for individuals and businesses looking to evaluate 
         car prices efficiently. By leveraging machine learning, it offers a seamless experience in determining a 
         car's fair value, making the buying and selling process more transparent and informed.
     </div>
     """, unsafe_allow_html=True)
 
-
 with tab2:
     st.write("<h4 style = 'color: black;'>Welcome to the Price Values tab!</h4>", unsafe_allow_html=True)
-    a1, a2, a3 = st.columns(3)
-    a4, a5, a6 = st.columns(3)
-    a7, a8, a9 = st.columns(3)
-    a10, a11, a12 = st.columns(3)
-    a13, a14 = st.columns(2)
-    
-    with a1:
-        city_select=st.selectbox("City",dropdown_options["city"])
-        city=encoder_city.transform([[city_select]])[0][0]
-    with a2:
-        ft_select=st.selectbox("Fuel Type",dropdown_options["ft"])
-        ft=encoder_ft.transform([[ft_select]])[0][0]
-    with a3:
-        bt_select=st.selectbox("Body Type",dropdown_options["bt"])
-        bt=encoder_bt.transform([[bt_select]])[0][0]
-    with a4:
-        km=st.number_input("KM driven",min_value=10)
-    with a5:
-        transmission_select=st.selectbox("Transmission",dropdown_options["transmission"])
-        transmission=encoder_transmission.transform([[transmission_select]])[0][0]
-    with a6:
-        ownerNo=st.number_input("No. of Owner's",min_value=1)
-    with a7:
-        oem_list=ml_df[ml_df["ft"]==ft_select]["oem"]
-        oem_filtered=oem_list.unique().tolist()
-        oem_select=st.selectbox("Manufacture Company",oem_filtered)
-        oem=encoder_oem.transform([[oem_select]])[0][0]
-    with a8:
-        model_list=ml_df[ml_df["oem"]==oem_select]["model"]
-        model_filtered=model_list.unique().tolist()
-        model_select=st.selectbox("Car Model Name",model_filtered)
-        model=encoder_model.transform([[model_select]])[0][0]
-    with a9:
-        modelYear=st.number_input("Car Manufacture Year",min_value=1900)
-    with a10:
-        variantName_list=ml_df[ml_df["model"]==model_select]["variantName"]
-        variantName_filtered=variantName_list.unique().tolist()
-        variantName_select=st.selectbox("Model Variant Name",variantName_filtered)
-        variantName=encoder_variantName.transform([[variantName_select]])[0][0]
-    with a11:
-        Registration_Year=st.number_input("Car Registration Year",min_value=1900)
-    with a12:
-        InsuranceValidity_select=st.selectbox("Insurance Type",dropdown_options["Insurance Validity"])
-        InsuranceValidity=encoder_Insurance_Validity.transform([[InsuranceValidity_select]])[0][0]
-    with a13:
-        Seats=st.number_input("Car seat capacity",min_value=4)
-    with a14:
-        EngineDisplacement=st.number_input("Engine (CC)",min_value=799)
+    col1, col2, col3 = st.columns(3)
+    col4, col5, col6 = st.columns(3)
+    col7, col8, col9 = st.columns(3)
+    col10, col11, col12 = st.columns(3)
+    col13, col14 = st.columns(2)
+
+    with col1:
+        city_input = st.selectbox("**City**", dropdown_options["city"])
+        city = encoder_city.transform([[city_input]])[0][0]
+
+    with col2:
+        ft_input = st.selectbox("**Fuel Type**", dropdown_options["ft"])
+        ft = encoder_ft.transform([[ft_input]])[0][0]
+
+    with col3:
+        bt_input = st.selectbox("**Body Type**", dropdown_options["bt"])
+        bt = encoder_bt.transform([[bt_input]])[0][0]
+
+    with col4:
+        km = st.number_input("**KM driven**", min_value=10)
+
+    with col5:
+        trans_input = st.selectbox("**Transmission**", dropdown_options["transmission"])
+        transmission = encoder_transmission.transform([[trans_input]])[0][0]
+
+    with col6:
+        ownerNo = st.number_input("**No. of Owners**", min_value=1)
+
+    with col7:
+        oem_options = ml_df[ml_df["ft"] == ft_input]["oem"].dropna().unique().tolist()
+        oem_input = st.selectbox("**Manufacture Company**", oem_options)
+        oem = encoder_oem.transform([[oem_input]])[0][0]
+
+    with col8:
+        model_options = ml_df[ml_df["oem"] == oem_input]["model"].dropna().unique().tolist()
+        model_input = st.selectbox("**Car Model Name**", model_options)
+        model = encoder_model.transform([[model_input]])[0][0]
+
+    with col9:
+        current_year = datetime.now().year
+        modelYear = st.number_input("**Car Manufacture Year**", min_value=1900, max_value=current_year)
+
+    with col10:
+        variant_options = ml_df[ml_df["model"] == model_input]["variantName"].dropna().unique().tolist()
+        variant_input = st.selectbox("**Model Variant Name**", variant_options)
+        variantName = encoder_variantName.transform([[variant_input]])[0][0]
+
+    with col11:
+        Registration_Year = st.number_input("**Registration Year**", min_value=1900, max_value=current_year)
+
+    with col12:
+        ins_input = st.selectbox("**Insurance Type**", dropdown_options["Insurance Validity"])
+        InsuranceValidity = encoder_Insurance_Validity.transform([[ins_input]])[0][0]
+
+    with col13:
+        Seats = st.number_input("**Seating Capacity**", min_value=2)
+
+    with col14:
+        EngineDisplacement = st.number_input("**Engine CC**", min_value=600)
+
+
+    if st.button('**Click Here!**'):
         
-    if st.button('Click Here!'):
-        input_data = pd.DataFrame([city,ft,bt,km,transmission,ownerNo,oem,model,modelYear,variantName,Registration_Year,InsuranceValidity,Seats,EngineDisplacement])
+        input_data = pd.DataFrame([[city, ft, bt, km, transmission, ownerNo, oem, model, modelYear,
+                            variantName, Registration_Year, InsuranceValidity, Seats, EngineDisplacement]],
+                          columns=['city', 'ft', 'bt', 'km', 'transmission', 'ownerNo', 'oem',
+                                   'model', 'modelYear', 'variantName', 'Registration_Year',
+                                   'Insurance Validity', 'Seats', 'EngineDisplacement'])
+        
 
         prediction = model_car.predict(input_data.values.reshape(1, -1))
                 
         st.markdown("<h2 style='color: black;'>Car Price</h2>", unsafe_allow_html=True)
         st.markdown(f"<h3 style='color: Green;'>₹ {prediction[0]:,.2f}</h3>", unsafe_allow_html=True)
+
+
+with tab3:
+    st.title("Car Resale Price EDA")
+
+    # Load your dataframe
+    ml_df = pd.read_excel("All_Cities_ML_Data.xlsx")
+
+    # Show basic info
+    st.subheader("🚗 **Dataset Overview**")
+
+    # Dropdown to select city
+    city_list = ["All"] + sorted(ml_df["city"].unique().tolist())
+    selected_city = st.selectbox("Select City to View Data", city_list)
+
+    # Filter dataframe based on selection
+    if selected_city == "All":
+        filtered_df = ml_df
+    else:
+        filtered_df = ml_df[ml_df["city"] == selected_city]
+
+    # Show the filtered dataframe
+    st.dataframe(filtered_df.head(50))
+
+    st.write(f"**Showing** {filtered_df.shape[0]} **rows for city**: **{selected_city}**")
+
+    # # Missing values
+    # st.subheader("**Missing Values**")
+    # st.write(ml_df.isnull().sum())
+
+    # Column selection
+    column = st.selectbox("**Choose a numeric column for histogram**", ml_df.select_dtypes(include='number').columns)
+    fig, ax = plt.subplots()
+    sns.histplot(ml_df[column], kde=True, ax=ax)
+    st.pyplot(fig)
+
+    # Correlation heatmap
+    st.subheader("**Correlation Heatmap**")
+    fig2, ax2 = plt.subplots(figsize=(10, 6))
+    sns.heatmap(ml_df.select_dtypes(include='number').corr(), annot=True, cmap="coolwarm", ax=ax2)
+    st.pyplot(fig2)
+
+    # Boxplot for outliers
+    st.subheader("**Boxplot for Outliers**")
+    box_col = st.selectbox("**Select a numeric column**", ml_df.select_dtypes(include='number').columns)
+    fig3, ax3 = plt.subplots()
+    sns.boxplot(x=ml_df[box_col], ax=ax3)
+    st.pyplot(fig3)
+
+    # Scatter vs price
+    st.subheader("**Price vs Feature Scatterplot**")
+    scatter_col = st.selectbox("**Select a feature**", ml_df.columns.drop("price"))
+    fig4, ax4 = plt.subplots()
+    sns.scatterplot(x=ml_df[scatter_col], y=ml_df["price"], ax=ax4)
+    st.pyplot(fig4)
