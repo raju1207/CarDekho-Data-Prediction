@@ -199,11 +199,13 @@ with tab3:
 
     st.write(f"**Showing** {filtered_df.shape[0]} **rows for city**: **{selected_city}**")
 
-    # Missing values
-    st.subheader("**Missing Values**")
+    # Data overview: missing values and histogram
+    st.subheader("📊 Data Distribution & Missing Value Analysis")
+
+    # Show missing values per column
     st.write(ml_df.isnull().sum())
 
-    # Column selection
+    # Column selection for histogram
     column = st.selectbox("**Choose a numeric column for histogram**", ml_df.select_dtypes(include='number').columns)
     fig, ax = plt.subplots()
     sns.histplot(ml_df[column], kde=True, ax=ax)
