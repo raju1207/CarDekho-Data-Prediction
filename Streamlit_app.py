@@ -3,10 +3,13 @@ import pickle
 import numpy as np
 import pandas as pd
 import base64
+import re
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import OrdinalEncoder
 from datetime import datetime
+import streamlit.components.v1 as components
+from nlp import chatbot_response
 
 
 @st.cache_resource
@@ -67,7 +70,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-tab1, tab2, tab3 = st.tabs(["Home", "Price Values", "Car Resale Price EDA"])
+tab1, tab2, tab3 = st.tabs(["Home", "Price Values", "Chatbot"])
 
 with tab1:
     st.write("<h4 style = 'color: black;'><strong>Welcome to the Home tab!</strong></h4>", unsafe_allow_html=True)
@@ -176,57 +179,217 @@ with tab2:
 
 
 with tab3:
-    st.title("Car Resale Price EDA")
 
-    # Load your dataframe
-    ml_df = pd.read_excel("All_Cities_ML_Data.xlsx")
+    # # Load car data
+    # df = pd.read_excel("All_Cities_ML_Data.xlsx")
 
-    # Show basic info
-    st.subheader("🚗 **Dataset Overview**")
+    # st.write("<h4 style = 'color: black;'>🚗 CarBot-Car Finder by Brand</h4>", unsafe_allow_html=True)
 
-    # Dropdown to select city
-    city_list = ["All"] + sorted(ml_df["city"].unique().tolist())
-    selected_city = st.selectbox("**Select City to View Data**", city_list)
+    # # Input
+    # user_input = st.text_input("🔍 Enter a car details", "")
 
-    # Filter dataframe based on selection
-    if selected_city == "All":
-        filtered_df = ml_df
-    else:
-        filtered_df = ml_df[ml_df["city"] == selected_city]
+    # # Clear button
+    # if st.button("🧹 Clear"):
+    #     st.rerun()
 
-    # Show the filtered dataframe
-    st.dataframe(filtered_df.head(50))
+    # # On input
+    # if user_input:
+    #     query = user_input.lower()
+    #     matched_brand = None
 
-    st.write(f"**Showing** {filtered_df.shape[0]} **rows for city**: **{selected_city}**")
+    #     for brand in df["oem"].dropna().unique():
+    #         if isinstance(brand, str) and brand.lower() in query:
+    #             matched_brand = brand
+    #             break
 
-    # Data overview: missing values and histogram
-    st.subheader("📊 Data Distribution & Missing Value Analysis")
+    #     if matched_brand:
+    #         st.success(f"Showing **{matched_brand}** Car Details:")
+    #         brand_df = df[df["oem"] == matched_brand]
+    #         cities = brand_df["city"].dropna().unique()
 
-    # Show missing values per column
-    st.write(ml_df.isnull().sum())
 
-    # Column selection for histogram
-    column = st.selectbox("**Choose a numeric column for histogram**", ml_df.select_dtypes(include='number').columns)
-    fig, ax = plt.subplots()
-    sns.histplot(ml_df[column], kde=True, ax=ax)
-    st.pyplot(fig)
+    #         for city in cities:
+    #             car = brand_df[brand_df["city"] == city].head(1)
+    #             if not car.empty:
+    #                 car_info = car.iloc[0]
 
-    # Correlation heatmap
-    st.subheader("**Correlation Heatmap**")
-    fig2, ax2 = plt.subplots(figsize=(10, 6))
-    sns.heatmap(ml_df.select_dtypes(include='number').corr(), annot=True, cmap="coolwarm", ax=ax2)
-    st.pyplot(fig2)
+    #             # Extract and clean fields
+    #             model = str(car_info.get("model", "N/A"))
+    #             variant = str(car_info.get("variantName", ""))
+    #             location = str(car_info.get("city", "N/A"))
+    #             fuel = str(car_info.get("ft", "N/A"))
+    #             transmission = str(car_info.get("transmission", "N/A"))
+    #             engine = str(car_info.get("Engine Displacement", "N/A"))
+    #             reg_year = str(car_info.get("Registration Year", "N/A"))
+    #             owner = str(car_info.get("ownerNo", "N/A"))
+    #             try:
+    #                 price = f"₹{int(str(car_info.get('price', '0')).replace(',', '').replace('₹', '')):,}"
+    #             except:
+    #                 price = str(car_info.get("price", "N/A"))
 
-    # Boxplot for outliers
-    st.subheader("**Boxplot for Outliers**")
-    box_col = st.selectbox("**Select a numeric column**", ml_df.select_dtypes(include='number').columns)
-    fig3, ax3 = plt.subplots()
-    sns.boxplot(x=ml_df[box_col], ax=ax3)
-    st.pyplot(fig3)
+    #             try:
+    #                 km = f"{int(str(car_info.get('km', '0')).replace(',', '')):,} km"
+    #             except:
+    #                 km = "N/A"
 
-    # Scatter vs price
-    st.subheader("**Price vs Feature Scatterplot**")
-    scatter_col = st.selectbox("**Select a feature**", ml_df.columns.drop("price"))
-    fig4, ax4 = plt.subplots()
-    sns.scatterplot(x=ml_df[scatter_col], y=ml_df["price"], ax=ax4)
-    st.pyplot(fig4)
+    #             # try:
+    #             #     seats = int(car_info.get("Seats", 0))
+    #             # except:
+    #             #     seats = "N/A"
+                
+    #             raw_seats = car_info.get("Seats", "")
+    #             if pd.notna(raw_seats):
+    #                 import re
+    #                 match = re.search(r"\d+", str(raw_seats))
+    #                 seats = int(match.group()) if match else "Not Specified"
+    #             else:
+    #                 seats = "Not Specified"
+
+
+    #             st.markdown(f"""
+    #             <div style="border:1px solid #ccc; border-radius:5px; padding:5px; margin-bottom:px; background-color:#f9f9f9;">
+    #                 <h4 style="color:#007BFF;">🚘 {model} {variant}</h4>
+    #                 <p>📍 <strong>Location:</strong> {location}</p>
+    #                 <p>💰 <strong>Price:</strong> {price}</p>
+    #                 <p>⛽ <strong>Fuel Type:</strong> {fuel} &nbsp;&nbsp; ⚙️ <strong>Transmission:</strong> {transmission}</p>
+    #                 <p>🛣️ <strong>Kilometers Driven:</strong> {km} &nbsp;&nbsp; 🛋️ <strong>Seats:</strong> {seats}</p>
+    #                 <p>📅 <strong>Registration Year:</strong> {reg_year} &nbsp;&nbsp; 🪪 <strong>Owner Number:</strong> {owner}</p>
+    #                 <p>🔧 <strong>Engine Displacement:</strong> {engine}</p>
+    #             </div>
+    #             """, unsafe_allow_html=True)
+
+                    
+    df = pd.read_excel("All_Cities_ML_Data.xlsx")
+    st.markdown("<h4 style='color:black;'>🚗 CarBot - Smart Car Finder</h4>", unsafe_allow_html=True)
+    
+    user_input = st.text_input("🔍 Enter a query like 'Honda cars in Chennai' or 'Tell me about Hyundai'", "")
+
+    if st.button("🧹 Clear"):
+        st.rerun()
+
+    if user_input:
+        query = user_input.lower()
+
+        # Extract brand and city from the query using simple matching
+        matched_brand = None
+        matched_city = None
+
+        # Match brand
+        for brand in df["oem"].dropna().unique():
+            if isinstance(brand, str) and brand.lower() in query:
+                matched_brand = brand
+                break
+
+        # Match city
+        for city in df["city"].dropna().unique():
+            if isinstance(city, str) and city.lower() in query:
+                matched_city = city
+                break
+
+        if matched_brand:
+            if matched_city:
+                filtered_df = df[(df["oem"] == matched_brand) & (df["city"] == matched_city)]
+                st.success(f"Showing top {min(10, len(filtered_df))} **{matched_brand}** cars in **{matched_city}**")
+            else:
+                filtered_df = df[df["oem"] == matched_brand]
+                st.success(f"Showing top {min(10, len(filtered_df))} **{matched_brand}** cars across all cities")
+
+            # Limit to top 10 results
+            top_cars = filtered_df.head(10)
+
+            if top_cars.empty:
+                st.warning("No matching cars found. Try a different query.")
+            else:
+                for idx, car_info in top_cars.iterrows():
+                    model = str(car_info.get("model", "N/A"))
+                    variant = str(car_info.get("variantName", ""))
+                    location = str(car_info.get("city", "N/A"))
+                    fuel = str(car_info.get("ft", "N/A"))
+                    transmission = str(car_info.get("transmission", "N/A"))
+                    engine = str(car_info.get("Engine Displacement", "N/A"))
+                    reg_year = str(car_info.get("Registration Year", "N/A"))
+                    owner = str(car_info.get("ownerNo", "N/A"))
+
+                    try:
+                        price = f"₹{int(str(car_info.get('price', '0')).replace(',', '').replace('₹', '')):,}"
+                    except:
+                        price = str(car_info.get("price", "N/A"))
+
+                    try:
+                        km = f"{int(str(car_info.get('km', '0')).replace(',', '')):,} km"
+                    except:
+                        km = "N/A"
+
+                    raw_seats = car_info.get("Seats", "")
+                    seats = int(re.search(r"\d+", str(raw_seats)).group()) if pd.notna(raw_seats) and re.search(r"\d+", str(raw_seats)) else "Not Specified"
+
+                    st.markdown(f"""
+                    <div style="border:1px solid #ccc; border-radius:5px; padding:10px; margin-bottom:10px; background-color:#f9f9f9;">
+                        <h4 style="color:#007BFF;">🚘 {model} {variant}</h4>
+                        <p>📍 <strong>Location:</strong> {location}</p>
+                        <p>💰 <strong>Price:</strong> {price}</p>
+                        <p>⛽ <strong>Fuel Type:</strong> {fuel} &nbsp;&nbsp; ⚙️ <strong>Transmission:</strong> {transmission}</p>
+                        <p>🛣️ <strong>Kilometers Driven:</strong> {km} &nbsp;&nbsp; 🛋️ <strong>Seats:</strong> {seats}</p>
+                        <p>📅 <strong>Registration Year:</strong> {reg_year} &nbsp;&nbsp; 🪪 <strong>Owner Number:</strong> {owner}</p>
+                        <p>🔧 <strong>Engine Displacement:</strong> {engine}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+        else:
+            st.warning("❌ No matching brand found. Try again like: 'Tell me about Hyundai cars in Bangalore'.")
+
+
+# with tab4:
+#     st.title("Car Resale Price EDA")
+
+#     # Load your dataframe
+#     ml_df = pd.read_excel("All_Cities_ML_Data.xlsx")
+
+#     # Show basic info
+#     st.subheader("🚗 **Dataset Overview**")
+
+#     # Dropdown to select city
+#     city_list = ["All"] + sorted(ml_df["city"].unique().tolist())
+#     selected_city = st.selectbox("**Select City to View Data**", city_list)
+
+#     # Filter dataframe based on selection
+#     if selected_city == "All":
+#         filtered_df = ml_df
+#     else:
+#         filtered_df = ml_df[ml_df["city"] == selected_city]
+
+#     # Show the filtered dataframe
+#     st.dataframe(filtered_df.head(50))
+
+#     st.write(f"**Showing** {filtered_df.shape[0]} **rows for city**: **{selected_city}**")
+
+#     # Data overview: missing values and histogram
+#     st.subheader("📊 Data Distribution & Missing Value Analysis")
+
+#     # Show missing values per column
+#     st.write(ml_df.isnull().sum())
+
+#     # Column selection for histogram
+#     column = st.selectbox("**Choose a numeric column for histogram**", ml_df.select_dtypes(include='number').columns)
+#     fig, ax = plt.subplots()
+#     sns.histplot(ml_df[column], kde=True, ax=ax)
+#     st.pyplot(fig)
+
+#     # Correlation heatmap
+#     st.subheader("**Correlation Heatmap**")
+#     fig2, ax2 = plt.subplots(figsize=(10, 6))
+#     sns.heatmap(ml_df.select_dtypes(include='number').corr(), annot=True, cmap="coolwarm", ax=ax2)
+#     st.pyplot(fig2)
+
+#     # Boxplot for outliers
+#     st.subheader("**Boxplot for Outliers**")
+#     box_col = st.selectbox("**Select a numeric column**", ml_df.select_dtypes(include='number').columns)
+#     fig3, ax3 = plt.subplots()
+#     sns.boxplot(x=ml_df[box_col], ax=ax3)
+#     st.pyplot(fig3)
+
+#     # Scatter vs price
+#     st.subheader("**Price vs Feature Scatterplot**")
+#     scatter_col = st.selectbox("**Select a feature**", ml_df.columns.drop("price"))
+#     fig4, ax4 = plt.subplots()
+#     sns.scatterplot(x=ml_df[scatter_col], y=ml_df["price"], ax=ax4)
+#     st.pyplot(fig4)
